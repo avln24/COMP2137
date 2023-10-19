@@ -15,7 +15,6 @@ UPTIME=$(uptime -p)
 
 #HARDWARE INFORMATION
 
-#CPU_MODEL=$(lscpu | grep -i "Model name" | sed 's/Model name:[[:blank:]]*//;s/@.*//') 
 CPU_MODEL=$(sudo lshw -C CPU | grep -Em 2 'vendor|product')
 
 CPU_MAXSPEED=$(sudo dmidecode | grep -I "Max Speed:" | head -n 1 | sed 's/.*Max Speed: //')
@@ -24,9 +23,8 @@ CPU_CURRENTSPEED=$(sudo dmidecode | grep -I "Current Speed:" | head -n 1 | sed '
 
 RAM=$(free -h | awk 'FNR==2 {print $2}')
 
-DISKINFO=$(sudo parted -l | grep -Eiw 'Model|Disk /*'| sed 's/^/       /') #Make, Model, and size for all installed disks
+DISKINFO=$(sudo parted -l | grep -Eiw 'Model|Disk /*'| sed 's/^/       /') #Added spaces before each line for formatting purposes in the system report
 
-#VIDEOCARD=$(sudo lspci | grep 'VGA' | sed 's/.*: //') #Make and Model of video card
 VIDEOCARD=$(sudo lshw -C video | grep -E 'vendor|product')
 
 #NETWORK INFORMATION
@@ -37,7 +35,7 @@ HOSTIP=$(hostname -i) #IP address for hostname
 
 GATEWAYIP=$(ip route | grep 'default' | sed 's/.*via.//;s/.dev.*//')
 
-DNSSERVER_IP=$(cat /etc/resolv.conf | grep 'nameserver' | sed 's/nameserver.//') #IP of DNS server
+DNSSERVER_IP=$(cat /etc/resolv.conf | grep 'nameserver' | sed 's/nameserver.//')
 
 NETWORKCARD=$(sudo lshw -C network | grep -Ei 'vendor|product|logical name') #Make and model of network card
 
@@ -48,7 +46,7 @@ IPADDRESSES=$(ip a | grep -w "global" | awk '{print $9" = "$2}' | sed -z 's/\n/,
 
 USERSLOGGEDIN=$(who | awk '{print $1}' | sed -z 's/\n/, /g;s/, $//')
 
-DISKSPACE=$(df -lh | awk 'FNR>1 { print $6, $4 }'| sed 's/^/       /') #Free space for local filesystems in format: /mountpoint N
+DISKSPACE=$(df -lh | awk 'FNR>1 { print $6, $4 }'| sed 's/^/       /') #Added spaces before each line for formatting purposes in the system report
 
 PROCESSCOUNT=$(ps -e --no-headers | wc -l)
 
@@ -56,7 +54,7 @@ LOADAVG=$(cat /proc/loadavg | awk '{print $1, $2, $3}' | sed 's/ /, /g')
 
 LISTENINGPORTS=$(sudo ss -lntu | grep -i 'listen' | awk '{print $5}' | sed 's/^.*://' | sed -z 's/\n/, /g;s/, $//')
 
-UFWDATA=$(sudo ufw status | sed 's/^/       /')
+UFWDATA=$(sudo ufw status | sed 's/^/       /') #Added spaces before each line for formatting purposes in the system report
 
 #MEMORYALLOCATION
 
