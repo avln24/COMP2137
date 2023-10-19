@@ -40,12 +40,12 @@ DNSSERVER_IP=$(cat /etc/resolv.conf | grep 'nameserver' | sed 's/nameserver.//')
 
 NETWORKCARD=$(sudo lspci | grep -im 1 'Ethernet' | sed 's/.*:.//') #Make and model of network card
 
-IPADDRESSES=$(ip a | grep -w "global" | awk '{print $2}') #IP addresses in CIDR format
+IPADDRESSES=$(ip a | grep -w "global" | awk '{print $2}' | sed -z 's/\n/, /') #IP addresses in CIDR format
 
 
 #SYSTEM STATUS
 
-USERSLOGGEDIN=$(who | awk '{print $1}' | sed -z 's/\n/, /')
+USERSLOGGEDIN=$(who | awk '{print $1}' | sed -z 's/\n/, /g')
 
 DISKSPACE=$(df -h | awk 'FNR>1 { print $6, $4 }') #Free space for local filesystems in format: /mountpoint N
 
@@ -53,7 +53,7 @@ PROCESSCOUNT=$(ps -e --no-headers | wc -l)
 
 LOADAVG=$(cat /proc/loadavg | awk '{print $1, $2, $3}' | sed 's/ /, /g')
 
-LISTENINGPORTS=$(sudo ss -lntu | grep -i 'listen' | awk '{print $5}' | sed 's/^.*://' | sed -z 's/\n/, /')
+LISTENINGPORTS=$(sudo ss -lntu | grep -i 'listen' | awk '{print $5}' | sed 's/^.*://' | sed -z 's/\n/, /g')
 
 UFWDATA=$(sudo ufw status)
 
@@ -81,7 +81,7 @@ Hardware Information
 CPU Model: $CPU_MODEL
 CPU Speed: Maximum = $CPU_MAXSPEED, Current = $CPU_CURRENTSPEED 
 Total RAM Size: $RAM
-Disk(s): $DISKINFO	#make and model and size for all installed disks
+Disk Information: $DISKINFO
 Video Card Model: $VIDEOCARD
  
 Network Information
@@ -97,12 +97,19 @@ IP Address: $IPADDRESSES
 System Status
 -------------
 Users Logged In: $USERSLOGGEDIN
-Disk Space: $DISKSPACE 	#FREE SPACE FOR LOCAL FILESYSTEMS IN FORMAT: /MOUNTPOINT N
+Disk Space:
+Mountpoint Size
+$DISKSPACE
 Process Count: $PROCESSCOUNT
 Load Averages: $LOADAVG
-Memory Allocation: Total Memory = $TOTAL_MEMORY, Used Memory = $USED_MEMORY, Unused Memory = $FREE_MEMORY, Available Memory = $AVAIL_MEMORY
+Memory Allocation:
+   Total Memory = $TOTAL_MEMORY
+   Used Memory = $USED_MEMORY
+   Unused Memory = $FREE_MEMORY
+   Available Memory = $AVAIL_MEMORY
 Listening Network Ports: $LISTENINGPORTS
-Firewall (UFW) Info: $UFWDATA
+Firewall (UFW) Info:
+  $UFWDATA
 
 EOF
 
