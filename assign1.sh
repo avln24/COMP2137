@@ -3,135 +3,135 @@
 ####### Data Collection #######
 
 #Get current date
-CURRENTDATE=$(date)
+currentdate=$(date)
 
 ### SYSTEM INFORMATION ###
 
 #Get hostname
-MYHOSTNAME=$(hostname)
+myhostname=$(hostname)
 
 #Get OS information and remove text before OS distro and version
-OPERATINGSYSTEM=$(hostnamectl | grep 'Operating System' | sed 's/.*: //') 
+operatingsystem=$(hostnamectl | grep 'Operating System' | sed 's/.*: //') 
 
 #Get uptime
-UPTIME=$(uptime -p)
+uptime=$(uptime -p)
 
 ### HARDWARE INFORMATION ###
 
 #Get only processor make/vendor and model/product
-CPU_MODEL=$(sudo lshw -C CPU | grep -Em 2 'vendor|product') 
+cpu_model=$(sudo lshw -C CPU | grep -Em 2 'vendor|product') 
 
 #Get maximum CPU speed and format output to only contain actual value and no labels
-CPU_MAXSPEED=$(sudo dmidecode | grep -I "Max Speed:" | head -n 1 | sed 's/.*Max Speed: //')
+cpu_maxspeed=$(sudo dmidecode | grep -I "Max Speed:" | head -n 1 | sed 's/.*Max Speed: //')
 
 #Get current CPU speed and format output to only contain actual value and no labels
-CPU_CURRENTSPEED=$(sudo dmidecode | grep -I "Current Speed:" | head -n 1 | sed 's/.*Current Speed: //')
+cpu_currentspeed=$(sudo dmidecode | grep -I "Current Speed:" | head -n 1 | sed 's/.*Current Speed: //')
 
 #Get total ram size only, used awk to select for specific value from output
-RAM=$(free -h | awk 'FNR==2 {print $2}')
+ramsize=$(free -h | awk 'FNR==2 {print $2}')
 
 #Get make, model, size of installed disks; added spaces before each line in the output for formatting of final system report
-DISKINFO=$(sudo parted -l | grep -Eiw 'Model|Disk /*'| sed 's/^/       /')
+diskinfo=$(sudo parted -l | grep -Eiw 'Model|Disk /*'| sed 's/^/       /')
 
 #Get videocard make and model
-VIDEOCARD=$(sudo lshw -C video | grep -E 'vendor|product')
+videocard=$(sudo lshw -C video | grep -E 'vendor|product')
 
 ### NETWORK INFORMATION ###
 
 #Get all FQDNS for the host
-FQDN=$(hostname --all-fqdns)
+fqdn=$(hostname --all-fqdns)
 
 #Get IP address associated with hostname
-HOSTIP=$(hostname -i) #IP address for hostname
+host_ip=$(hostname -i) #IP address for hostname
 
 #Get default route and format to remove text before and after the IP address (only return IP address in output)
-GATEWAYIP=$(ip route | grep 'default' | sed 's/.*via.//;s/.dev.*//')
+gateway_ip=$(ip route | grep 'default' | sed 's/.*via.//;s/.dev.*//')
 
 #Get nameserver IP address and remove text before IP address in output (only return IP address in output)
-DNSSERVER_IP=$(cat /etc/resolv.conf | grep 'nameserver' | sed 's/nameserver.//') 
+dnsserver_ip=$(cat /etc/resolv.conf | grep 'nameserver' | sed 's/nameserver.//') 
 
 #Get make and model of network card, include name of interface
-NETWORKCARD=$(sudo lshw -C network | grep -Ei 'vendor|product|logical name')
+networkcard=$(sudo lshw -C network | grep -Ei 'vendor|product|logical name')
 
 #Get IP address in CIDR format, label each address with it's corresponding interface, format the output to one line and separate with commas
-IPADDRESSES=$(ip a | grep -w "global" | awk '{print $9" = "$2}' | sed -z 's/\n/, /g;s/, $//')
+ipaddresses=$(ip a | grep -w "global" | awk '{print $9" = "$2}' | sed -z 's/\n/, /g;s/, $//')
 
 ### SYSTEM STATUS ###
 
 #Get logged in users and format output to contain only usernames, separated by commas in a single line
-USERSLOGGEDIN=$(who | awk '{print $1}' | sed -z 's/\n/, /g;s/, $//')
+usersloggedin=$(who | awk '{print $1}' | sed -z 's/\n/, /g;s/, $//')
 
 #Get free space for local filesystems; added spaces before each line in the output for formatting of final system report
-DISKSPACE=$(df -lh | awk 'FNR>1 { print $6, $4 }'| sed 's/^/       /') 
+diskspace=$(df -lh | awk 'FNR>1 { print $6, $4 }'| sed 's/^/       /') 
 
 #Count number of processes
-PROCESSCOUNT=$(ps -e --no-headers | wc -l)
+processcount=$(ps -e --no-headers | wc -l)
 
 #Get load averages and format output to be separated by commas
-LOADAVG=$(cat /proc/loadavg | awk '{print $1, $2, $3}' | sed 's/ /, /g')
+loadavg=$(cat /proc/loadavg | awk '{print $1, $2, $3}' | sed 's/ /, /g')
 
 #Get listening network ports, format output to only have the port numbers and be separated by commas instead of new lines
-LISTENINGPORTS=$(sudo ss -lntu | grep -i 'listen' | awk '{print $5}' | sed 's/^.*://' | sed -z 's/\n/, /g;s/, $//')
+listening_ports=$(sudo ss -lntu | grep -i 'listen' | awk '{print $5}' | sed 's/^.*://' | sed -z 's/\n/, /g;s/, $//')
 
 #Get firewall status and UFW rules (if configured) and add spaces before each line in the output for formatting of final system report
-UFWDATA=$(sudo ufw status | sed 's/^/       /')
+ufwdata=$(sudo ufw status | sed 's/^/       /')
 
 ### MEMORY ALLOCATION ###
 
 #Get memory (RAM) allocation information from free and make it human readable
-TOTAL_MEMORY=$(free -h | awk 'FNR==2 {print $2}')
-USED_MEMORY=$(free -h | awk 'FNR==2 {print $3}')
-AVAIL_MEMORY=$(free -h | awk 'FNR==2 {print $7}')
-FREE_MEMORY=$(free -h | awk 'FNR==2 {print $4}')
+total_memory=$(free -h | awk 'FNR==2 {print $2}')
+used_memory=$(free -h | awk 'FNR==2 {print $3}')
+avail_memory=$(free -h | awk 'FNR==2 {print $7}')
+free_memory=$(free -h | awk 'FNR==2 {print $4}')
 
 ####### Report Template #######
 
 cat<<EOF
 
-System Report generated by $USER on $CURRENTDATE
+System Report generated by $USER on $currentdate
 
 System Information
 ------------------
-Hostname: $MYHOSTNAME
-OS: $OPERATINGSYSTEM
-Uptime: $UPTIME
+Hostname: $myhostname
+OS: $operatingsystem
+Uptime: $uptime
 
 Hardware Information
 --------------------
 CPU Model:
-$CPU_MODEL
-CPU Speed: Maximum = $CPU_MAXSPEED, Current = $CPU_CURRENTSPEED 
-Total RAM Size: $RAM
+$cpu_model
+CPU Speed: Maximum = $cpu_maxspeed, Current = $cpu_currentspeed 
+Total RAM Size: $ramsize
 Disk Information:
-$DISKINFO
+$diskinfo
 VideoCard:
-$VIDEOCARD
+$videocard
 
 Network Information
 -------------------
-FQDN: $FQDN
-Host Address: $HOSTIP
-Gateway IP: $GATEWAYIP
-DNS Server: $DNSSERVER_IP
+FQDN: $fqdn
+Host Address: $host_ip
+Gateway IP: $gateway_ip
+DNS Server: $dnsserver_ip
 
 InterfaceName:
-$NETWORKCARD
-IP Address(es): $IPADDRESSES
+$networkcard
+IP Address(es): $ipaddresses
 
 System Status
 -------------
-Users Logged In: $USERSLOGGEDIN
+Users Logged In: $usersloggedin
 Disk Space:
        Mountpoint Size
-$DISKSPACE
-Process Count: $PROCESSCOUNT
-Load Averages: $LOADAVG
+$diskspace
+Process Count: $processcount
+Load Averages: $loadavg
 Memory Allocation:
-       Total Memory = $TOTAL_MEMORY
-       Used Memory = $USED_MEMORY
-       Unused Memory = $FREE_MEMORY
-       Available Memory = $AVAIL_MEMORY
-Listening Network Ports: $LISTENINGPORTS
+       Total Memory = $total_memory
+       Used Memory = $used_memory
+       Unused Memory = $free_memory
+       Available Memory = $avail_memory
+Listening Network Ports: $listening_ports
 Firewall (UFW) Rules:
-$UFWDATA
+$ufwdata
 EOF
