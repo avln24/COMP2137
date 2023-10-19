@@ -2,62 +2,83 @@
 
 ####### Data Collection #######
 
+#Get current date
 CURRENTDATE=$(date)
 
-#SYSTEM INFORMATION
+### SYSTEM INFORMATION ###
 
+#Get hostname
 MYHOSTNAME=$(hostname)
 
-OPERATINGSYSTEM=$(hostnamectl | grep 'Operating System' | sed 's/.*: //')
+#Get OS information and remove text before OS distro and version
+OPERATINGSYSTEM=$(hostnamectl | grep 'Operating System' | sed 's/.*: //') 
 
+#Get uptime
 UPTIME=$(uptime -p)
 
+### HARDWARE INFORMATION ###
 
-#HARDWARE INFORMATION
+#Get only processor make/vendor and model/product
+CPU_MODEL=$(sudo lshw -C CPU | grep -Em 2 'vendor|product') 
 
-CPU_MODEL=$(sudo lshw -C CPU | grep -Em 2 'vendor|product')
-
+#Get maximum CPU speed and format output to only contain actual value and no labels
 CPU_MAXSPEED=$(sudo dmidecode | grep -I "Max Speed:" | head -n 1 | sed 's/.*Max Speed: //')
 
+#Get current CPU speed and format output to only contain actual value and no labels
 CPU_CURRENTSPEED=$(sudo dmidecode | grep -I "Current Speed:" | head -n 1 | sed 's/.*Current Speed: //')
 
+#Get total ram size only, used awk to select for specific value from output
 RAM=$(free -h | awk 'FNR==2 {print $2}')
 
-DISKINFO=$(sudo parted -l | grep -Eiw 'Model|Disk /*'| sed 's/^/       /') #Added spaces before each line for formatting purposes in the system report
+#Get make, model, size of installed disks; added spaces before each line in the output for formatting of final system report
+DISKINFO=$(sudo parted -l | grep -Eiw 'Model|Disk /*'| sed 's/^/       /')
 
+#Get videocard make and model
 VIDEOCARD=$(sudo lshw -C video | grep -E 'vendor|product')
 
-#NETWORK INFORMATION
+### NETWORK INFORMATION ###
 
+#Get all FQDNS for the host
 FQDN=$(hostname --all-fqdns)
 
+#Get IP address associated with hostname
 HOSTIP=$(hostname -i) #IP address for hostname
 
+#Get default route and format to remove text before and after the IP address (only return IP address in output)
 GATEWAYIP=$(ip route | grep 'default' | sed 's/.*via.//;s/.dev.*//')
 
-DNSSERVER_IP=$(cat /etc/resolv.conf | grep 'nameserver' | sed 's/nameserver.//')
+#Get nameserver IP address and remove text before IP address in output (only return IP address in output)
+DNSSERVER_IP=$(cat /etc/resolv.conf | grep 'nameserver' | sed 's/nameserver.//') 
 
-NETWORKCARD=$(sudo lshw -C network | grep -Ei 'vendor|product|logical name') #Make and model of network card
+#Get make and model of network card, include name of interface
+NETWORKCARD=$(sudo lshw -C network | grep -Ei 'vendor|product|logical name')
 
-IPADDRESSES=$(ip a | grep -w "global" | awk '{print $9" = "$2}' | sed -z 's/\n/, /g;s/, $//') #IP addresses in CIDR format
+#Get IP address in CIDR format, label each address with it's corresponding interface, format the output to one line and separate with commas
+IPADDRESSES=$(ip a | grep -w "global" | awk '{print $9" = "$2}' | sed -z 's/\n/, /g;s/, $//')
 
+### SYSTEM STATUS ###
 
-#SYSTEM STATUS
-
+#Get logged in users and format output to contain only usernames, separated by commas in a single line
 USERSLOGGEDIN=$(who | awk '{print $1}' | sed -z 's/\n/, /g;s/, $//')
 
-DISKSPACE=$(df -lh | awk 'FNR>1 { print $6, $4 }'| sed 's/^/       /') #Added spaces before each line for formatting purposes in the system report
+#Get free space for local filesystems; added spaces before each line in the output for formatting of final system report
+DISKSPACE=$(df -lh | awk 'FNR>1 { print $6, $4 }'| sed 's/^/       /') 
 
+#Count number of processes
 PROCESSCOUNT=$(ps -e --no-headers | wc -l)
 
+#Get load averages and format output to be separated by commas
 LOADAVG=$(cat /proc/loadavg | awk '{print $1, $2, $3}' | sed 's/ /, /g')
 
+#Get listening network ports, format output to only have the port numbers and be separated by commas instead of new lines
 LISTENINGPORTS=$(sudo ss -lntu | grep -i 'listen' | awk '{print $5}' | sed 's/^.*://' | sed -z 's/\n/, /g;s/, $//')
 
-UFWDATA=$(sudo ufw status | sed 's/^/       /') #Added spaces before each line for formatting purposes in the system report
+#Get firewall status and UFW rules (if configured) and add spaces before each line in the output for formatting of final system report
+UFWDATA=$(sudo ufw status | sed 's/^/       /')
 
-#MEMORYALLOCATION
+### MEMORY ALLOCATION ###
 
+#Get memory (RAM) allocation information from free and make it human readable
 TOTAL_MEMORY=$(free -h | awk 'FNR==2 {print $2}')
 USED_MEMORY=$(free -h | awk 'FNR==2 {print $3}')
 AVAIL_MEMORY=$(free -h | awk 'FNR==2 {print $7}')
@@ -114,4 +135,3 @@ Listening Network Ports: $LISTENINGPORTS
 Firewall (UFW) Rules:
 $UFWDATA
 EOF
-
