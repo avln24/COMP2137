@@ -46,30 +46,32 @@ else
       ethernets:
         $hostonly_interface:
           addresses: [$static_ip]
-          gateway4: $gateway_ip #TEST IF THIS WORKS
+          routes:
+            - to: default
+              via: $gateway_ip
           nameservers:
             search: [home.arpa, localdomain]
             addresses: [$dnsserver_ip]
 EOF
     echo "Created netplan YAML file /etc/netplan/$yaml_hostonly with proper settings for interface: $hostonly_interface"
-    
-    #Apply network configuration changes to system
-    echo "Applying network configuration changes to system"
-    if [ sudo netplan apply > /dev/null 2>&1 -eq 0]; then
-        echo "Netplan configuration changes to $hostonly_interface have been applied!"
-    else
-        echo "Failed to apply netplan configuration changes to $hostonly_interface. Exiting script."
-        exit 1
-    fi
+fi
+
+#Apply network configuration changes to system
+
+if [ sudo netplan apply > /dev/null 2>&1 -eq 0]; then
+    echo "Netplan configuration changes to $hostonly_interface have been applied!"
+else
+    echo "Failed to apply netplan configuration changes to $hostonly_interface. Exiting script."
+    exit 1
 fi
 
 #Check if hostonly_interface IP address was set correctly
 new_hostip=$(ip a | grep -E "ens|eth" | grep "inet" | awk 'FNR==2 {print $2}')
 
 if ["$new_hostip" == "$static_ip" ]; then
-    echo "$hostonly_interface interface IP address is configured correctly."
+    echo "$hostonly_interface interface IP address was configured correctly."
 else
-    echo "$hostonly_interface does not have the correct static IP address. Exiting script"
+    echo "Failed to change $hostonly_interface IP address. Exiting script"
     exit 1
 fi
 
