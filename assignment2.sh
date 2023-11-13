@@ -39,11 +39,33 @@ else
           nameservers:
             search: [home.arpa, localdomain]
             addresses: [$dnsserver_ip]
-    EOF
+EOF
     echo "Changed network configuration file for interface: $hostonly_interface"
 fi
 
 #Apply network configuration changes to system
+
+if netplan apply > /dev/null; then
+    echo "Netplan configuration changes to $hostonly_interface have been applied!"
+else
+    echo "Failed to apply netplan configuration changes to $hostonly_interface. Exiting script."
+    exit 1
+fi
+
+#Check if hostonly_interface IP address was set correctly
+new_hostip=$(ip a | grep "ens" | awk 'FNR==4 {print $2}')
+
+if ["$new_hostip" == "$static_ip" ]; then
+    echo "$hostonly_interface interface IP address was configured correctly."
+else
+    echo "Failed to change $hostonly_interface IP address. Exiting script"
+    exit 1
+fi
+
+##### INSTALL AND CONFIGURE REQUIRED SOFTWARE #####
+
+
+
 
 
 
