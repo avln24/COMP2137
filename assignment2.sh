@@ -94,13 +94,13 @@ else
     echo "IP address for server1-mgmt in /etc/hosts is already correct."
 fi
 
-##### INSTALL ##### INSTALL AND CONFIGURE REQUIRED SOFTWARE #####
+##### INSTALL AND CONFIGURE REQUIRED SOFTWARE #####
 
 #Check if openssh, apache2, and squid web proxy are already installed
 packages="openssh-server apache2 squid"
 
 for package in $packages; do
-    dpkg-query -s $package | grep "installed" > /dev/null 2>&1  
+    dpkg-query -s $package 2> /dev/null | grep "installed" > /dev/null 2>&1  
     if [ $? -ne 0 ]; then
         echo "Installing package: $package"
         sudo apt install -y $package > /dev/null 2>&1
@@ -115,6 +115,53 @@ for package in $packages; do
     fi
 done
 
+#Configure Openssh-server
+#Openssh-server allowing ssh key authentication and not allowing password authentication
+ssh_config="/etc/ssh/sshd_config"
+echo "Checking if OpenSSH server public key authentication is enabled"
+if [ $(grep -i "PubkeyAuthentication" $ssh_config | awk '{print $2}') = "yes" ]; then
+    #Check if PubkeyAutnethication is uncommented
+    grep -i "#PubkeyAuthentication" $ssh_config
+    if [ $? -eq 0  ]; then
+        echo "Uncommenting PubkeyAuthentication in $ssh_config"
+        sed -i.bak '/PubkeyAuthentication/ s/#//' $ssh_config
+    else
+        echo "Public key authentication is already enabled for OpenSSH-server. Skipping this step."
+    fi
+else
+    echo "Enabling public key authentication for OpenSSH-server."
+    #Uncomment PubKeyAuthentication and change to yes in /etc/ssh/sshd_config
+    sed -i.bak '/PubkeyAuthentication/ s/#//;s/no/yes/' $ssh_config 
+    #Uncomment AuthorizedKeysFile in /etc/ssh/sshd_config
+    sed -i.bak '/AuthorizedKeysFile/ s/#//' $ssh_config 
+
+    #Check if change to /etc/ssh/sshd_config was successfully made
+    if [ $(grep -i "PubkeyAuthentication" $ssh_config | awk '{print $2}') = "yes" ]; then
+        echo "Public key authentication successfully enabled for OpenSSH-server."
+    else
+        echo "Failed to enable public key authentication for OpenSSH-server. Exiting script."
+        exit 1
+    fi
+fi
+
+echo "Checking if OpenSSH server password authentication is disabled"
+if [ $(grep -i "PasswordAuthentication" $ssh_config | awk 'FNR==1 {print $2}') = "no" ]; then
+    echo "Password authentication is already disabled for OpenSSH-server. Skipping this step"
+else
+    echo "Disabling password authentication for OpenSSH-server."
+    #Change PasswordAuthentication from yes to no in /etc/ssh/sshd_config
+    sed -i.bak '/PasswordAuthentication/ s/yes/no/' $ssh_config 
+    if [ $(grep -i "PasswordAuthentication" $ssh_config | awk 'FNR==1 {print $2}') = "no" ]; then
+        echo "Password authentication successfully disabled for OpenSSH-server."
+    else
+        echo "Failed to disable password authentication for OpenSSH-server. Exiting script."
+        exit 1
+    fi
+fi
+
+#Restart SSH service to apply changes made to /etc/ssh/sshd_config
+sudo systemctl restart ssh && echo "Restarted SSH service."
+   
 
 
 
