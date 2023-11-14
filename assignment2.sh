@@ -94,8 +94,26 @@ else
     echo "IP address for server1-mgmt in /etc/hosts is already correct."
 fi
 
-##### INSTALL AND CONFIGURE REQUIRED SOFTWARE #####
+##### INSTALL ##### INSTALL AND CONFIGURE REQUIRED SOFTWARE #####
 
+#Check if openssh, apache2, and squid web proxy are already installed
+packages="openssh-server apache2 squid"
+
+for package in $packages; do
+    dpkg-query -s $package | grep "installed" > /dev/null 2>&1  
+    if [ $? -ne 0 ]; then
+        echo "Installing package: $package"
+        sudo apt install -y $package > /dev/null 2>&1
+        if [ $? -eq 0 ]; then
+            echo "Package: $package was successfully installed!"
+        else
+            echo "Installation of package: $package failed. Exiting script."
+            exit 1
+        fi
+    else
+        echo "Package: $package is already installed! Skipping installation of $package."
+    fi
+done
 
 
 
