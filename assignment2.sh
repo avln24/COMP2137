@@ -68,16 +68,6 @@ EOF
     fi
 fi
 
-#Check if hostonly_interface IP address was set correctly
-new_hostonlyip=$(ip a | grep -E "ens|eth" | grep "inet" | awk 'FNR==2 {print $2}')
-
-if [ "$static_ip" = "$new_hostonlyip" ]; then
-    echo "$hostonly_interface interface IP address is configured correctly."
-else
-    echo "$hostonly_interface does not have the correct static IP address. Exiting script"
-    exit 1
-fi
-
 #Change IP address for hostonly_interface in /etc/hosts file
 echo "Checking if IP address for server1-mgmt in /etc/hosts needs to be changed."
 server1mgmt_oldip=$(grep "server1-mgmt" /etc/hosts | awk '{print $1}')
@@ -87,16 +77,28 @@ if [ "$server1mgmt_oldip" != "$old_hostonlyip" ]; then
     echo "Changing IP address for server1-mgmt in /etc/hosts file"
     sed -Ei "s/$server1mgmt_oldip/$server1mgmt_newip/" /etc/hosts
     echo "Checking if IP address was changed for server1-mgmt"
-    if [ $(grep "server1-mgmt" /etc/hosts | awk '{print $1}') = server1mgmt_newip ];
+    if [ "$(grep "server1-mgmt" /etc/hosts | awk '{print $1}')" = "$server1mgmt_newip" ];
         then echo "IP address for server1-mgmt in /etc/hosts file was changed!"
     fi
 else
     echo "IP address for server1-mgmt in /etc/hosts is already correct."
 fi
 
+#Check if hostonly_interface IP address was set correctly
+new_ip=$(ip addr | grep -E "ens|eth" | grep "inet" | awk 'FNR==2 {print $2}')
+
+if [ "$new_ip" = "$static_ip" ]; then
+    echo "$hostonly_interface interface IP address is configured correctly."
+else
+    echo "$hostonly_interface does not have the correct static IP address. Exiting script"
+    exit 1
+fi
+
 ##### INSTALL AND CONFIGURE REQUIRED SOFTWARE #####
 
 #Check if openssh, apache2, and squid web proxy are already installed
+#If package is not installed, install it
+
 packages="openssh-server apache2 squid"
 
 for package in $packages; do
@@ -115,8 +117,9 @@ for package in $packages; do
     fi
 done
 
-#Configure Openssh-server
+#CONFIGURE OPENSSH-SERVER
 #Openssh-server allowing ssh key authentication and not allowing password authentication
+
 ssh_config="/etc/ssh/sshd_config"
 echo "Checking if OpenSSH server public key authentication is enabled"
 if [ $(grep -i "PubkeyAuthentication" $ssh_config | awk '{print $2}') = "yes" ]; then
@@ -161,6 +164,25 @@ fi
 
 #Restart SSH service to apply changes made to /etc/ssh/sshd_config
 sudo systemctl restart ssh && echo "Restarted SSH service."
+
+#CONFIGURE APACHE2
+#Apache2 web server listening for http on port 80 and https on port 443
+#Check /etc/apache2/ports.conf if Apache2 web server is listening to ports 80 and 443
+grep -i 'Listen 80' /etc/apache2/ports.conf > /dev/null 2>&1
+if [ $? -eq 0 ]; then
+    echo "Apache2 web server is already listening to port 80"
+else
+    echo "Adding 'Listen 80' to /etc/apache2/ports.conf"
+fi
+    
+#Enable Apache2 SSL module (HTTPS)
+echo "Enabling SSL for Apache2 web server"
+a2enmod ssl > /dev/null 2>&1 && echo "SSL enabled for Apache2 web server"
+echo "Restarting Apache2 web service"
+systemctl restart apache2
+
+#CONFIGURE SQUID WEB PROXY
+#Squid web proxy listening on port 3128
    
 
 
