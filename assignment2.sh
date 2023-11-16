@@ -6,8 +6,13 @@
 # Should produce human-friendly error information should errors occur
 
 ##### Checking for Sudo #####
-#echo "Checking for sudo"
-#[ "$(id -u)" -eq 0 ] 
+echo "Checking for sudo"
+if [ "$(id -u)" -eq 0 ]; then
+    echo "Running system modification script."
+else
+    echo "User does not have sudo permissions. Cannot run script."
+    exit 1
+fi
 
 ##### NETWORK CONFIGURATION #####
 
@@ -85,7 +90,7 @@ else
 fi
 
 #Check if hostonly_interface IP address was set correctly
-new_ip=$(ip addr | grep -E "ens|eth" | grep "inet" | awk 'FNR==2 {print $2}')
+new_ip=$(ip a | grep -E "ens|eth" | grep "inet" | awk 'FNR==2 {print $2}')
 
 if [ "$new_ip" = "$static_ip" ]; then
     echo "$hostonly_interface interface IP address is configured correctly."
@@ -123,7 +128,7 @@ done
 ssh_config="/etc/ssh/sshd_config"
 echo "Checking if OpenSSH server public key authentication is enabled"
 if [ $(grep -i "PubkeyAuthentication" $ssh_config | awk '{print $2}') = "yes" ]; then
-    #Check if PubkeyAutnethication is uncommented
+    #Check if PubkeyAuthentication is uncommented
     grep -i "#PubkeyAuthentication" $ssh_config
     if [ $? -eq 0  ]; then
         echo "Uncommenting PubkeyAuthentication in $ssh_config"
@@ -167,25 +172,81 @@ sudo systemctl restart ssh && echo "Restarted SSH service."
 
 #CONFIGURE APACHE2
 #Apache2 web server listening for http on port 80 and https on port 443
-#Check /etc/apache2/ports.conf if Apache2 web server is listening to ports 80 and 443
-grep -i 'Listen 80' /etc/apache2/ports.conf > /dev/null 2>&1
+#Check /etc/apache2/ports.conf if Apache2 web server is listening to port 80
+grep -iw 'Listen 80' /etc/apache2/ports.conf > /dev/null 2>&1
 if [ $? -eq 0 ]; then
     echo "Apache2 web server is already listening to port 80"
 else
     echo "Adding 'Listen 80' to /etc/apache2/ports.conf"
+    sed -i '/<IfModule ssl_module>/i Listen 80\n' /etc/apache2/ports.conf
 fi
-    
+
+#Check /etc/apache2/sites-enabled/000-default.conf if <VirtualHost: *:80>
+grep -iw '<VirtualHost \*:80>' /etc/apache2/sites-available/000-default.conf > /dev/null 2>&1
+if [ $? -ne 0 ]; then
+    echo "Changing VirtualHost port in /etc/apache2/sites-available/000-default.conf to port 80."
+    sed -i '/VirtualHost \*:/ s/:.*/:80>/' /etc/apache2/sites-available/000-default.conf
+else
+    echo "/etc/apache2/sites-available/000-default.conf is already configured with the correct port."
+fi
+
+#Check /etc/apache2/ports.conf if Apache2 web server is listening to port 443
+grep -iw 'Listen 443' /etc/apache2/ports.conf > /dev/null 2>&1
+if [ $? -eq 0 ]; then
+    echo "Apache2 web server is already listening to port 443"
+else
+    echo "Adding 'Listen 443' to /etc/apache2/ports.conf"
+    sed -i '/<IfModule ssl_module>/a \ \ \ \ \ \ \ \ Listen 443' /etc/apache2/ports.conf
+fi
+
+#Check /etc/apache2/sites-enabled/default-ssl.conf if <VirtualHost _default_:443>
+grep -iw '<VirtualHost _default_:443>' /etc/apache2/sites-available/default-ssl.conf > /dev/null 2>&1
+if [ $? -ne 0 ]; then
+    echo "Changing VirtualHost port in /etc/apache2/sites-available/default-ssl.conf to port 443."
+    sed -i '/VirtualHost _default_:/ s/:.*/:443>/' /etc/apache2/sites-available/default-ssl.conf
+else
+    echo "/etc/apache2/sites-available/default-ssl.conf is already configured with the correct port."
+fi
+
 #Enable Apache2 SSL module (HTTPS)
 echo "Enabling SSL for Apache2 web server"
-a2enmod ssl > /dev/null 2>&1 && echo "SSL enabled for Apache2 web server"
-echo "Restarting Apache2 web service"
-systemctl restart apache2
+a2enmod ssl > /dev/null 2>&1 && a2ensite default-ssl > /dev/null 2>&1 && echo "SSL enabled for Apache2 web server"
+echo "Reloading Apache2 web service"
+systemctl reload apache2
 
 #CONFIGURE SQUID WEB PROXY
 #Squid web proxy listening on port 3128
-   
+grep -iw 'http_port 3128' /etc/squid/squid.conf > /dev/null 2>&1
+if [ $? -eq 0 ]; then
+    echo "Squid web proxy is already listening to port 3128"
+else
+    echo "Changing listening port on Squid web proxy to port 3128"
+    sed -i 's/http_port .*/http_port 3128/' /etc/squid/squid.conf
+fi
 
+##### ENABLE FIREWALL AND ADD UFW RULES #####
+#Check if firewall is enabled:
+ufw status | grep "Status: active"
+if [ $? -eq 0 ]; then
+    echo "Firewall is already active. Skipping to next step."
+else
+    echo "Enabling firewall."
+    ufw --force enable 
+fi
 
+#Check if ufw rule already exists, if it does not exist then add it.
+ports="22 80 443 3128"
+
+for port in $ports; do
+    ufw status | grep "$port" | grep "ALLOW" > /dev/null 2>&1
+    if [ $? -eq 0 ]; then
+        echo "UFW ALLOW $port already exists."
+    else
+        echo "Adding UFW ALLOW $port..."
+        ufw allow $port/tcp
+    fi
+done
+    
 
 
 
