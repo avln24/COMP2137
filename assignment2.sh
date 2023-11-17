@@ -1,9 +1,6 @@
 #!/bin/bash
 
 # Assignment 2: System Modification Script
-# Determine what modifications are necessary by conducting testing before implementing a change
-# Make sure to provide updates and notify the user of changes being made
-# Should produce human-friendly error information should errors occur
 
 ##### Checking for Sudo #####
 echo "Checking for sudo"
