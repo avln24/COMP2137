@@ -294,6 +294,7 @@ fi
 #Check if ~/.ssh exists in /home/dennis/, if it does not exist then create it
 echo ""
 echo "Configuring SSH for dennis"
+echo "--------------------------"
 find /home/dennis/.ssh > /dev/null 2>&1
 if [ $? -eq 0 ]; then
     echo "/home/dennis/.ssh exists!"
@@ -350,6 +351,7 @@ for username in $regusers; do
         echo "User: $username does not exist. Creating user!"
         useradd -s /bin/bash -m $username 
         grep -w $username /etc/passwd > /dev/null 2>&1 && echo "User: $username was successfully created."
+        echo ""
     else
         echo "User: $username already exists! Skipping user creation."
     fi
@@ -358,11 +360,12 @@ done
 for username in $allusers; do
     echo ""
     echo "Configuring SSH for $username"
+    echo "--------------------------"
     #Check if ~/.ssh exists in /home/$username/, if it does not exist then create it
     echo "Checking if ~/.ssh directory exists for $username..."
     find /home/$username/.ssh > /dev/null 2>&1
     if [ $? -eq 0 ]; then
-        echo "/home/$username/.ssh exists!\n"
+        echo "/home/$username/.ssh exists!"
     else
         echo "Could not find /home/$username/.ssh. Creating ~/.ssh directory."
         mkdir /home/$username/.ssh
