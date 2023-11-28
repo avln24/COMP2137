@@ -70,6 +70,22 @@ fi
 EOF
 
 # Install UFW (if necessary) and allow connections to port 514/udp from the MGMT network
+ssh remoteadmin@server1-mgmt << EOF
+
+ufw status 
+#if disabled
+ufw enable
+ufw allow udp
+
+dpkg-query -s ufw 2> /dev/null | grep "installed" > /dev/null 2>&1  
+if [ $? -ne 0 ]; then
+    echo "Installing UFW"
+    apt update > /dev/null 2>&1
+    apt install -y ufw > /dev/null 2>&1
+else
+    echo "UFW already installed."
+
+EOF
 
 #Configure rsyslog to listen for UDP connections
 # Look in /etc/rsyslog.conf for the configuration settings lines that say imudp
