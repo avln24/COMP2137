@@ -103,9 +103,19 @@ EOF
 # Look in /etc/rsyslog.conf for the configuration settings lines that say imudp
 #Uncomment both of the lines
 #Restart the rsyslog service using systemctl restart rsyslog
+ssh remoteadmin@server1-mgmt << EOF
 
-grep "imudp" /etc/rsyslog.conf | sed -i 's/#//g' /etc/rsyslog.conf 
+grep "imudp" /etc/rsyslog.conf | grep "#" > /dev/null
+if [ $? -eq 0 ]; then
+    echo "rsyslog is already listening for UDP connections"
+else
+    echo "Configuring rsyslog to listen for UDP connections..."
+    grep "imudp" /etc/rsyslog.conf | sed -i 's/#//g' /etc/rsyslog.conf
+fi
+
 systemctl restart rsyslog
+
+EOF
 
 ##### Configuring Target2-mgmt (172.16.1.11) #####
 
