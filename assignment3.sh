@@ -5,7 +5,8 @@
 #NOTE: your script must only use ssh to access the target1 and target2 machines
 
 ##### Configuring Target1-mgmt (172.16.1.10) #####
- 
+ssh_server1mgmt=$(ssh -o StrictHostKeyChecking=no remoteadmin@server1-mgmt)
+
 #Change system name from target1 to loghost (both hostname and /etc/hosts file)
 #Check if hostname is already set to loghost, and change it if is not
 ssh remoteadmin@server1-mgmt << EOF
@@ -72,11 +73,6 @@ EOF
 # Install UFW (if necessary) and allow connections to port 514/udp from the MGMT network
 ssh remoteadmin@server1-mgmt << EOF
 
-ufw status 
-#if disabled
-ufw enable
-ufw allow udp
-
 dpkg-query -s ufw 2> /dev/null | grep "installed" > /dev/null 2>&1  
 if [ $? -ne 0 ]; then
     echo "Installing UFW"
@@ -84,6 +80,22 @@ if [ $? -ne 0 ]; then
     apt install -y ufw > /dev/null 2>&1
 else
     echo "UFW already installed."
+fi
+
+ufw_status=$(ufw status | grep "Status:" | awk '{ print $2 }')
+if [ "$ufw_status" = "active"]; then
+    echo "UFW already enabled!"
+else
+    ufw --force enable
+fi
+
+ufw status | grep "514/udp" | grep "ALLOW" | grep "172.16.1.0"
+if [ $? -eq 0 ]; then
+    echo "UFW Rule already exists: Allow connections to 514/udp from MGMT network"
+else
+    echo "Adding UFW Rule: allow connections to port 514/UDP from MGMT network!"
+    ufw allow proto udp from 172.16.1.0/24 to any port 514
+fi
 
 EOF
 
@@ -91,6 +103,9 @@ EOF
 # Look in /etc/rsyslog.conf for the configuration settings lines that say imudp
 #Uncomment both of the lines
 #Restart the rsyslog service using systemctl restart rsyslog
+
+grep "imudp" /etc/rsyslog.conf | sed -i 's/#//g' /etc/rsyslog.conf 
+systemctl restart rsyslog
 
 ##### Configuring Target2-mgmt (172.16.1.11) #####
 
