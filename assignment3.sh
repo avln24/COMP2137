@@ -144,6 +144,14 @@ else
     ufw allow from 172.16.1.0/24 to any port 514 proto udp
 fi
 
+#Adding UFW rule for SSH port 22 access from MGMT network
+ufw status | grep "22/tcp" | grep "ALLOW" | grep "172.16.1.0"
+if [ $? -eq 0 ]; then
+    echo "UFW Rule already exists: allow connections to 22/tcp from MGMT network"
+else
+    echo "Adding UFW Rule: allow connections to port 22/tcp from MGMT network!"
+    ufw allow from 172.16.1.0/24 to any port 22 proto tcp
+fi
 
 #Configure rsyslog to listen for UDP connections
 # Look in /etc/rsyslog.conf for the configuration settings lines that say imudp
@@ -313,6 +321,18 @@ else
     ufw allow from any to any port 80 proto tcp
 fi
 
+#Adding UFW rule for SSH port 22 access from MGMT network
+#Added this rule to enable access to server from MGMT network after firewall is enabled!
+#Without this rule, you will no longer be able to SSH into the server from the NMS
+
+ufw status | grep "22/tcp" | grep "ALLOW" | grep "172.16.1.0"
+if [ $? -eq 0 ]; then
+    echo "UFW Rule already exists: allow connections to 22/tcp from MGMT network"
+else
+    echo "Adding UFW Rule: allow connections to port 22/tcp from MGMT network!"
+    ufw allow from 172.16.1.0/24 to any port 22 proto tcp
+fi
+
 #Install apache2 in its default configuration
 
 dpkg-query -s apache2 2> /dev/null | grep "installed" > /dev/null
@@ -402,7 +422,7 @@ fi
 #Verify you can retrieve the default apache web page from the NMS using firefox
 #With the URL http://webhost
 
-wget -q -O - http://webhost 
+wget -q -O - http://webhost > /dev/null 2>&1
 if [ $? -eq 0 ]; then
     echo "Successfully retrieved default apache web page!"
 else
@@ -415,7 +435,7 @@ fi
 #Let the user know that the configuration update has succeeded
 #Otherwise, tell them what did not work in a user-friendly way
 
-webhost_in_log=$(ssh remoteadmin@loghost "grep 'webhost' /var/log/syslog")
+webhost_in_log=$(ssh remoteadmin@loghost "grep webhost /var/log/syslog")
 if [ -n $webhost_in_log ]; then
     echo "Configuration update succeeded!"
 else
