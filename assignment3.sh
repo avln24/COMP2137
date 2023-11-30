@@ -358,8 +358,8 @@ if [ $? -eq 0 ]; then
     echo "rsyslog is already configured to send logs to loghost!"
 else
     echo "Configuring rsyslog to send logs to loghost..."
-    echo "*.* @loghost" >> /etc/rsyslog.conf
-    grep "\*.\* @loghost" /etc/rsyslog.conf > /dev/null
+    echo "*.* @loghost:514" >> /etc/rsyslog.conf
+    grep "\*.\* @loghost:514" /etc/rsyslog.conf > /dev/null
     if [ $? -eq 0 ]; then
         echo "Successfully configured rsyslog to send logs to loghost!"
         systemctl restart rsyslog
@@ -409,8 +409,20 @@ fi
 echo 'Configuring NMS'
 
 echo "Updating NMS /etc/hosts file..."
-sudo sed -i '0,/server1/s/.10/.3/;0,/server1/s/server1/loghost/' /etc/hosts
-sudo sed -i '0,/server2/s/.11/.4/;0,/server2/s/server2/webhost/' /etc/hosts
+grep "loghost" /etc/hosts | grep ".3"
+if [ $? -eq 0 ]; then
+    echo "loghost already exists inside /etc/hosts file"
+else
+    sudo sed -i '0,/server1/s/.10/.3/;0,/server1/s/server1/loghost/' /etc/hosts
+fi
+
+grep "webhost" /etc/hosts | grep ".4"
+if [ $? -eq 0 ]; then
+    echo "webhost already exists inside /etc/hosts file"
+else
+    sudo sed -i '0,/server2/s/.11/.4/;0,/server2/s/server2/webhost/' /etc/hosts
+fi
+
 lines_hostfile=$(grep -E "loghost|webhost" /etc/hosts | wc -l)
 if [ "$lines_hostfile" -eq "2" ]; then
     echo "/etc/hosts file was successfully updated!"
