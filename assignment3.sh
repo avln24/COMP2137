@@ -9,7 +9,7 @@
 #Create script server1-config.sh
 
 echo "Creating server1 configuration script..."
-cat > ~/server1-config.sh << EOF
+cat > ~/server1-config.sh << 'EOF'
 #!/bin/bash
 
 #Change system name from target1 to loghost (both hostname and /etc/hosts file)
@@ -182,7 +182,7 @@ fi
 #Create script server2-config.sh
 
 echo "Creating server2 configuration script..."
-cat > ~/server2-config.sh << EOF
+cat > ~/server2-config.sh << 'EOF'
 #!/bin/bash
 
 #Change system name from target 2 to webhost (both hostname and /etc/hosts file)
