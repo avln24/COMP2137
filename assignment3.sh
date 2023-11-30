@@ -5,12 +5,14 @@
 #NOTE: your script must only use ssh to access the target1 and target2 machines
 
 ##### Configuring Target1-mgmt (172.16.1.10) #####
-ssh remoteadmin@server1-mgmt "echo 'Configuring Target1'"
+
+echo "Configuring Server1"
 
 #Change system name from target1 to loghost (both hostname and /etc/hosts file)
 #Check if hostname is already set to loghost, and change it if is not
-ssh remoteadmin@server1-mgmt << EOF
+cat > server1-config.sh << EOF
 
+echo "Checking hostname..."
 if [ "$(hostname)" = "loghost" ]; then
     echo "System name is already configured as "loghost", skipping step"
 else
@@ -27,13 +29,15 @@ fi
 EOF
 
 #Check if "loghost" exists inside /etc/hosts file and add it if it does not
-ssh remoteadmin@server1-mgmt << EOF
+cat >> server1-config.sh << EOF
+
+echo "Checking for loghost entry inside /etc/hosts file..."
 grep -w "loghost" /etc/hosts > /dev/null 2>&1
 if [ $? -eq 0 ]; then
     echo "hostname already configured to loghost within /etc/hosts file"
 else
     echo "Changing hostname to loghost within /etc/hosts file..."
-    grep "server1" /etc/hosts | sed -i 's/server1/loghost/g' /etc/hosts 
+    grep "$(hostname -I | awk '{ print $1 }')" /etc/hosts | sed -i '0,/server1/ s/server1/loghost/' /etc/hosts 
     grep "loghost" /etc/hosts
     if [ $? -eq 0 ]; then 
         echo "Hostname was changed to loghost within /etc/hosts!"
@@ -45,25 +49,28 @@ fi
 EOF
 
 #Change IP Address from host 10 to host 3 on the LAN
-ssh remoteadmin@server1-mgmt << EOF
+cat >> server1-config.sh << EOF
 
+echo "Checking IP address: if current host is host 3 on LAN..."
 lan_netip=$(hostname -I | awk '{ print $1 }' | sed 's/.10$//') 
 yaml_file=$(find /etc/netplan -type f -name '*.yaml')
 
 grep "$lan_netip.10/24" $yaml_file | sed -i "s/$lan_netip.10/$lan_netip.3/" $yaml_file
 netplan apply > /dev/null 2>&1
-new_ip=$(hostname -I | awk '{ print $1 }')
-if [ "$new_ip" = "$lan_netip.3" ]; then
+
+grep "$lan_netip.3" $yaml_file > /dev/null
+if [ $? -eq 0 ]; then
     echo "IP address was successfully configured to host 3 on LAN"
 else
     echo "Failed to change IP address to host 3 on LAN"
     exit 1
 fi
-
 EOF
 
 #Add a machine named webhost to the /etc/hosts file as host 4 on the LAN
-ssh remoteadmin@server1-mgmt << EOF
+cat >> server1-config.sh << EOF
+
+echo "Checking if webhost exists within /etc/hosts..."
 lan_netip=$(hostname -I | awk '{ print $1 }' | sed 's/.3$//')
 
 grep "webhost" /etc/hosts
@@ -92,12 +99,12 @@ else
         exit 1
     fi
 fi
-
 EOF
 
 # Install UFW (if necessary) and allow connections to port 514/udp from the MGMT network
-ssh remoteadmin@server1-mgmt << EOF
+cat >> server1-config.sh << EOF
 
+echo "Checking if UFW is installed..."
 dpkg-query -s ufw 2> /dev/null | grep "installed" > /dev/null 2>&1  
 if [ $? -ne 0 ]; then
     echo "Installing UFW"
@@ -128,21 +135,31 @@ EOF
 # Look in /etc/rsyslog.conf for the configuration settings lines that say imudp
 #Uncomment both of the lines
 #Restart the rsyslog service using systemctl restart rsyslog
-ssh remoteadmin@server1-mgmt << EOF
 
-grep "imudp" /etc/rsyslog.conf | grep "#" > /dev/null 2>&1
+#PROBLEM: After running this step: problems trying to connect to server1-mgmt
+cat >> server1-config.sh << EOF
+
+echo "Configuring rsyslog..."
+grep "imudp" /etc/rsyslog.conf | grep "#" > /dev/null
 if [ $? -ne 0 ]; then
     echo "rsyslog is already listening for UDP connections"
 else
     echo "Configuring rsyslog to listen for UDP connections..."
-    grep "imudp" /etc/rsyslog.conf | sed -i 's/#//' /etc/rsyslog.conf
-    systemctl restart rsyslog
+    grep "imudp" /etc/rsyslog.conf | sed -i 's/#//' /etc/rsyslog.conf | systemctl restart rsyslog
+    if [ $? -eq 0 ]; then
+        echo "Rsyslog configuration successful!"
+    else
+        echo "Failed to configure rsyslog."
+        exit 1
+    fi
 fi
 EOF
 
+echo "Completed Server1 configuration!"
+
 ##### Configuring Target2-mgmt (172.16.1.11) #####
 
-ssh remoteadmin@server1-mgmt "echo 'Configuring Target2'"
+ssh remoteadmin@server1-mgmt "echo 'Configuring Server2'"
 
 #Change system name from target 2 to webhost (both hostname and /etc/hosts file)
 ssh remoteadmin@server2-mgmt << EOF
