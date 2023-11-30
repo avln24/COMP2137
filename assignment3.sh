@@ -77,7 +77,7 @@ if [ "$(grep "loghost" /etc/hosts | awk '{ print $1 }')" = "$lan_netip.3" ]; the
 else
     echo "Configuring correct IP address for loghost in /etc/hosts..."
     sed -i "/$lan_netip.10 loghost/s/$lan_netip.10/$lan_netip.3/" /etc/hosts
-    if [ "$(grep "webhost" /etc/hosts | awk '{ print $1 }')" = "$lan_netip.3" ]; then
+    if [ "$(grep "loghost" /etc/hosts | awk '{ print $1 }')" = "$lan_netip.3" ]; then
         echo "Correct IP address was configured for loghost in /etc/hosts!"
     else
         echo "Failed to configure correct IP address for loghost in /etc/hosts."
@@ -418,5 +418,4 @@ if [ -n $webhost_in_log ]; then
 else
     echo "Failed to update configuration. Could not find webhost in logs from loghost."
     exit 1
-
-
+fi
