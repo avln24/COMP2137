@@ -164,6 +164,7 @@ else
         exit 1
     fi
 fi
+exit
 EOF
 
 #Copy server1-config.sh to server1
@@ -347,6 +348,7 @@ else
         exit 1
     fi
 fi
+exit
 EOF
 
 #Copy server2-config.sh to server2
@@ -369,6 +371,7 @@ if [ $? -eq 0 ]; then
 else
     echo "Configuration of Server1 failed."
     exit 1
+fi
 
 echo "Running server2 configuration script..."
 ssh remoteadmin@server2-mgmt "bash /home/remoteadmin/server2-config.sh"
@@ -377,7 +380,7 @@ if [ $? -eq 0 ]; then
 else
     echo "Configuration of Server2 failed."
     exit 1
-
+fi
 
 ##### Configuring NMS #####
 
