@@ -150,7 +150,7 @@ if [ $? -eq 0 ]; then
     echo "UFW Rule already exists: allow connections to 22/tcp from MGMT network"
 else
     echo "Adding UFW Rule: allow connections to port 22/tcp from MGMT network!"
-    ufw allow from 172.16.1.0/24 to any port 22 proto tcp
+    ufw allow from 172.16.1.1 to any port 22 proto tcp
 fi
 
 #Configure rsyslog to listen for UDP connections
@@ -330,7 +330,7 @@ if [ $? -eq 0 ]; then
     echo "UFW Rule already exists: allow connections to 22/tcp from MGMT network"
 else
     echo "Adding UFW Rule: allow connections to port 22/tcp from MGMT network!"
-    ufw allow from 172.16.1.0/24 to any port 22 proto tcp
+    ufw allow from 172.16.1.1 to any port 22 proto tcp
 fi
 
 #Install apache2 in its default configuration
@@ -447,7 +447,7 @@ fi
 #Let the user know that the configuration update has succeeded
 #Otherwise, tell them what did not work in a user-friendly way
 
-webhost_in_log=$(ssh remoteadmin@loghost "grep webhost /var/log/syslog")
+webhost_in_log=$(ssh -o StrictHostKeyChecking=no remoteadmin@loghost "grep webhost /var/log/syslog")
 if [ -n $webhost_in_log ]; then
     echo "Configuration update succeeded!"
 else
