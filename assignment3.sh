@@ -409,14 +409,14 @@ fi
 echo 'Configuring NMS'
 
 echo "Updating NMS /etc/hosts file..."
-grep "loghost" /etc/hosts | grep ".3"
+grep "loghost" /etc/hosts | grep ".3" > /dev/null
 if [ $? -eq 0 ]; then
     echo "loghost already exists inside /etc/hosts file"
 else
     sudo sed -i '0,/server1/s/.10/.3/;0,/server1/s/server1/loghost/' /etc/hosts
 fi
 
-grep "webhost" /etc/hosts | grep ".4"
+grep "webhost" /etc/hosts | grep ".4" > /dev/null
 if [ $? -eq 0 ]; then
     echo "webhost already exists inside /etc/hosts file"
 else
