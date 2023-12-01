@@ -21,7 +21,7 @@ if [ "$(hostname)" = "loghost" ]; then
 else
     echo "Changing system name to 'loghost'..."
     hostnamectl set-hostname loghost 
-    grep "loghost" /etc/hostname
+    grep "loghost" /etc/hostname > /dev/null
     if [ $? -eq 0 ]; then
         echo "System name was successfully changed to loghost."
     else
@@ -144,13 +144,14 @@ else
     ufw allow from 172.16.1.0/24 to any port 514 proto udp
 fi
 
-#Adding UFW rule for SSH port 22 access from MGMT network
+#Adding UFW rule for SSH port 22 access from MGMT network and LAN
 ufw status | grep "22/tcp" | grep "ALLOW" | grep "172.16.1.0"
 if [ $? -eq 0 ]; then
     echo "UFW Rule already exists: allow connections to 22/tcp from MGMT network"
 else
     echo "Adding UFW Rule: allow connections to port 22/tcp from MGMT network!"
-    ufw allow from 172.16.1.1 to any port 22 proto tcp
+    ufw allow from 172.16.1.0/24 to any port 22 proto tcp
+    ufw allow from 192.168.16.0/24 to any port 22 proto tcp
 fi
 
 #Configure rsyslog to listen for UDP connections
@@ -201,7 +202,7 @@ if [ "$(hostname)" = "webhost" ]; then
 else
     echo "Changing system name to 'webhost'..."
     hostnamectl set-hostname webhost 
-    grep "webhost" /etc/hostname
+    grep "webhost" /etc/hostname > /dev/null
     if [ $? -eq 0 ]; then
         echo "System name was successfully changed to webhost."
     else
@@ -330,7 +331,7 @@ if [ $? -eq 0 ]; then
     echo "UFW Rule already exists: allow connections to 22/tcp from MGMT network"
 else
     echo "Adding UFW Rule: allow connections to port 22/tcp from MGMT network!"
-    ufw allow from 172.16.1.1 to any port 22 proto tcp
+    ufw allow from 172.16.1.0/24 to any port 22 proto tcp
 fi
 
 #Install apache2 in its default configuration
@@ -388,6 +389,7 @@ echo "Running server1 configuration script..."
 ssh remoteadmin@server1-mgmt "bash /home/remoteadmin/server1-config.sh"
 if [ $? -eq 0 ]; then
     echo "Completed Server1 configuration!"
+    echo "--------------------------------"
 else
     echo "Configuration of Server1 failed."
     exit 1
@@ -397,6 +399,7 @@ echo "Running server2 configuration script..."
 ssh remoteadmin@server2-mgmt "bash /home/remoteadmin/server2-config.sh"
 if [ $? -eq 0 ]; then
     echo "Completed Server2 configuration!"
+    echo "--------------------------------"
 else
     echo "Configuration of Server2 failed."
     exit 1
